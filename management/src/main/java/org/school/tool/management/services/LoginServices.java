@@ -1,27 +1,43 @@
 package org.school.tool.management.services;
 
-import org.hibernate.query.Query;
-
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
 import org.school.tool.management.model.LoginModel;
 import org.school.tool.management.model.LoginRequestModel;
 import org.school.tool.management.model.LoginResponseModel;
-import org.school.tool.management.model.LoginResposeResultModel;
-import org.school.tool.management.model.PermissionTableModel;
+import org.school.tool.management.model.LoginResponseUserModel;
+import org.school.tool.management.model.ResultModel;
 import org.school.tool.management.model.RoleTypeModel;
 import org.school.tool.management.model.SessionModel;
 
 public class LoginServices {
 	
+	public static final Pattern VALID_EMAIL_ADDRESS_REGEX = 
+		    Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,6}$", Pattern.CASE_INSENSITIVE);
+	
 	public LoginResponseModel validateLogin(LoginRequestModel userModel){
 		
-		String userName = userModel.getUserName();
+		String email = userModel.getEmail();
 		String password = userModel.getPassword();
+		
+		if(!validate(email)){
+			LoginResponseModel responseModel = new LoginResponseModel();
+			ResultModel resultModel = new ResultModel();
+			resultModel.setStatus("Error");
+			resultModel.setMessage("Email invalid!");
+			responseModel.setResult(resultModel);
+			return responseModel;
+		}
 		
 		Configuration con = new Configuration().configure().addAnnotatedClass(LoginModel.class).
 									addAnnotatedClass(SessionModel.class).addAnnotatedClass(RoleTypeModel.class);
@@ -34,24 +50,54 @@ public class LoginServices {
 		
 		Transaction tx = session.beginTransaction();
 		
-		Query loginQuery = session.createQuery("from LoginModel where userName = :userName and password = :password");
-		loginQuery.setParameter("userName", userName);
+		Query loginQuery = session.createQuery("from LoginModel where email = :email and password = :password");
+		loginQuery.setParameter("email", email);
 		loginQuery.setParameter("password", password);
 		LoginModel model = (LoginModel) loginQuery.uniqueResult();
 		
 		tx.commit();
+		session.close();
 		
 		if (model == null){
-			return null;
-		}else {
+			LoginResponseModel responseModel = new LoginResponseModel();
+			ResultModel resultModel = new ResultModel();
+			resultModel.setStatus("Error");
+			resultModel.setMessage("Email or Password is incorrect!");
+			responseModel.setResult(resultModel);
+			return responseModel;
+		}else {	
 			Session conSession = sf.openSession();
 			Transaction conTx = conSession.beginTransaction();
 			SessionModel sessionModel = new SessionModel();
-			sessionModel.setId(0);
+			sessionModel.setSessionId(0);
 			sessionModel.setSessionToken(UUID.randomUUID().toString().replaceAll("-", ""));
 			sessionModel.setLoginId(model.getId());
+			if (userModel.isRemember()){
+				TimeZone indianTimeZone = TimeZone.getTimeZone("Asia/Calcutta");
+				Calendar calendar = Calendar.getInstance(indianTimeZone);
+				long time = calendar.getTimeInMillis();
+				Date sessionTime = new Date(time + (10*24*60*60000));
+				sessionModel.setSession_timeout(sessionTime);
+			}else {
+				TimeZone indianTimeZone = TimeZone.getTimeZone("Asia/Calcutta");
+				Calendar calendar = Calendar.getInstance(indianTimeZone);
+				long time = calendar.getTimeInMillis();
+				Date sessionTime = new Date(time + (5*60000));
+				sessionModel.setSession_timeout(sessionTime);
+			}
 			conSession.save(sessionModel);
 			conTx.commit();
+			conSession.close();
+			
+			Session loginSession = sf.openSession();
+			Transaction loginTx = loginSession.beginTransaction();
+			Query query = loginSession.createQuery("update LoginModel set remember=:remember, logged_in=:logged where loginId =:loginId");
+			query.setParameter("remember", userModel.isRemember());
+			query.setParameter("logged", true);
+			query.setParameter("loginId", model.getLoginId());
+			query.executeUpdate();
+			loginTx.commit();
+			loginSession.close();
 			
 			Session permissionSession = sf.openSession();
 			Transaction permissionTx = permissionSession.beginTransaction();
@@ -59,16 +105,21 @@ public class LoginServices {
 			permissionQuery.setParameter("name", model.getRoleType());
 			RoleTypeModel permissionTableModel = (RoleTypeModel) permissionQuery.uniqueResult();
 			permissionTx.commit();
+			permissionSession.close();
 			
-			System.out.println(model.getId() + " " + model.getUserName() + " " + model.getPassword() + " " + model.getRoleType());
 			LoginResponseModel responseModel = new LoginResponseModel();
-			LoginResposeResultModel resultModel = new LoginResposeResultModel();
+			responseModel.setSession_token(sessionModel.getSessionToken());
+			ResultModel resultModel = new ResultModel();
 			resultModel.setStatus("Ok");
 			resultModel.setMessage("Login Success!");
 			responseModel.setResult(resultModel);
-			responseModel.setRoleType(model.getRoleType());
-			responseModel.setSessiontoken(sessionModel.getSessionToken());
-			responseModel.setUserRoleAvailability(permissionTableModel.getUserRoleAvailability());
+			LoginResponseUserModel responseUserModel = new LoginResponseUserModel();
+			responseUserModel.setUser_id(model.getUserId());
+			responseUserModel.setFirstname(model.getFirstName());
+			responseUserModel.setLastname(model.getLastName());
+			responseUserModel.setUser_role(model.getRoleType());
+			responseUserModel.setUser_role_availability(permissionTableModel.getUser_role_availability());
+			responseUserModel.setEmail(model.getEmail());
 			
 //			StringBuilder permissionBuilder = new StringBuilder();
 //			if (permissionTableModel.isCanAccessAcademicReport()) permissionBuilder.append("ACADEMIC_REPORT, ");
@@ -91,11 +142,17 @@ public class LoginServices {
 			
 			String permission = permissionTableModel.getPermissions();
 			String[] permissions = permission.split(", ");
+			responseUserModel.setPermissions(permissions);
+			responseModel.setUser(responseUserModel);
 			
-			responseModel.setPermissions(permissions);
 			return responseModel;
 		}
 		
 	}
+	
+	public static boolean validate(String emailStr) {
+        Matcher matcher = VALID_EMAIL_ADDRESS_REGEX .matcher(emailStr);
+        return matcher.find();
+}
 
 }

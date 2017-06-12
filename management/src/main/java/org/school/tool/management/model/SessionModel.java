@@ -1,5 +1,7 @@
 package org.school.tool.management.model;
 
+import java.util.Date;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -9,16 +11,11 @@ import javax.persistence.Table;
 public class SessionModel {
 	
 	@Id 
-	private int id;
+	private int sessionId;
 	private String sessionToken;
 	private int loginId;
+	private Date session_timeout;
 	
-	public int getId() {
-		return id;
-	}
-	public void setId(int id) {
-		this.id = id;
-	}
 	public String getSessionToken() {
 		return sessionToken;
 	}
@@ -31,7 +28,17 @@ public class SessionModel {
 	public void setLoginId(int loginId) {
 		this.loginId = loginId;
 	}
-	
-	
+	public int getSessionId() {
+		return sessionId;
+	}
+	public void setSessionId(int sessionId) {
+		this.sessionId = sessionId;
+	}
+	public Date getSession_timeout() {
+		return session_timeout;
+	}
+	public void setSession_timeout(Date session_timeout) {
+		this.session_timeout = session_timeout;
+	}
 
 }

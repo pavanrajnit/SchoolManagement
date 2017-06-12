@@ -1,5 +1,6 @@
 package org.school.tool.management.model;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -12,7 +13,11 @@ public class RoleTypeModel {
 	private int id;
 	private String name;
 	private String permissions;
-	private String userRoleAvailability;
+	@Column(name="userRoleAvailability")
+	private String user_role_availability;
+	private boolean is_default;
+	private boolean login;
+	
 	public int getId() {
 		return id;
 	}
@@ -31,11 +36,23 @@ public class RoleTypeModel {
 	public void setPermissions(String permissions) {
 		this.permissions = permissions;
 	}
-	public String getUserRoleAvailability() {
-		return userRoleAvailability;
+	public String getUser_role_availability() {
+		return user_role_availability;
 	}
-	public void setUserRoleAvailability(String userRoleAvailability) {
-		this.userRoleAvailability = userRoleAvailability;
+	public void setUser_role_availability(String user_role_availability) {
+		this.user_role_availability = user_role_availability;
 	}
-
+	public boolean isIs_default() {
+		return is_default;
+	}
+	public void setIs_default(boolean is_default) {
+		this.is_default = is_default;
+	}
+	public boolean isLogin() {
+		return login;
+	}
+	public void setLogin(boolean login) {
+		this.login = login;
+	}
+	
 }

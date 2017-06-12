@@ -2,41 +2,27 @@ package org.school.tool.management.model;
 
 public class LoginResponseModel {
 	
-	private LoginResposeResultModel result;
-	private String[] permissions;
-	private String roleType;
-	private String sessiontoken;
-	private String userRoleAvailability;
-	public LoginResposeResultModel getResult() {
+	private String session_token;
+	private ResultModel result;
+	private LoginResponseUserModel user;
+	
+	
+	public String getSession_token() {
+		return session_token;
+	}
+	public void setSession_token(String session_token) {
+		this.session_token = session_token;
+	}
+	public ResultModel getResult() {
 		return result;
 	}
-	public void setResult(LoginResposeResultModel result) {
+	public void setResult(ResultModel result) {
 		this.result = result;
 	}
-	public String[] getPermissions() {
-		return permissions;
+	public LoginResponseUserModel getUser() {
+		return user;
 	}
-	public void setPermissions(String[] permissions) {
-		this.permissions = permissions;
+	public void setUser(LoginResponseUserModel user) {
+		this.user = user;
 	}
-	public String getRoleType() {
-		return roleType;
-	}
-	public void setRoleType(String roleType) {
-		this.roleType = roleType;
-	}
-	public String getSessiontoken() {
-		return sessiontoken;
-	}
-	public void setSessiontoken(String sessiontoken) {
-		this.sessiontoken = sessiontoken;
-	}
-	public String getUserRoleAvailability() {
-		return userRoleAvailability;
-	}
-	public void setUserRoleAvailability(String userRoleAvailability) {
-		this.userRoleAvailability = userRoleAvailability;
-	}
-	
-	
 }
